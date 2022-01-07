@@ -1,0 +1,88 @@
+Rihal data science challenge
+Based on the data provided of records of car sales related information It is obvious that it is structured data. In addition to the requirement of prediction the known traditional methods to pick from will include regression and decision tree in general avoiding descriptive methods and unstructured data approaches. Another thing to be noted from the data that is it has mixture of categorical and continues data types, so here we can analyze and see which features have more influence then go more toward either continues algorithms like linear regression, neural networks or toward classifiers like decision tree, logistic regression etc. Random forest regression or classifier is known for its flexibility and ability to predict with high scores in many of the structured data cases. It is based on the traditional decision tree however it creates multiple trees (hence the name forest) and tries to take advantage from that approach with given tuning parameters to decide on how large the forest etc. I have utilized it for this case and looks good enough without even much data preparation and no tuning at all given the time I have.
+
+Note:since we choose regression approach, we have to encode any categorical features to be numerical. I opt out to the simple label encoder where one feature to be encoded to one column only. However to be more accurate other encoders should be considered where more columns are created per feature and it will avoid the ordinal effect of distances between categories.
+
+developed by Abdullah Almazidi for Rihal data science hiring challenge 7 Jan 2022### ©
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
+from sklearn import preprocessing
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import mean_absolute_error
+
+
+# force engine_capacity as float32, this will help later as all must be float32
+df_train = pd.read_csv('C:/Users/User/machine_learning_python/Rihal-Challange/data_train.csv',dtype={'engine_capacity':np.float32})
+df_test = pd.read_csv('C:/Users/User/machine_learning_python/Rihal-Challange/data_test.csv',dtype={'engine_capacity':np.float32})
+
+
+
+#split both train and test data sets to x and y (x=>features, y=> predictor)     
+y_train = df_train['price_usd']
+x_train = df_train.drop('price_usd', 1)
+
+y_test = df_test['price_usd']
+x_test = df_test.drop('price_usd', 1)
+
+#lebel encoding for categorical columns
+#function for basic string to number encoding 
+def dummyEncode(df):
+        columnsToEncode = list(df.select_dtypes(include=['category','object']))
+        le = LabelEncoder()
+        for feature in columnsToEncode:
+            try:
+                df[feature] = le.fit_transform(df[feature])
+            except:
+                print('Error encoding '+feature)
+        return df
+    
+#encode all non numeric to numeric representation
+x_train_temp=x_train
+x_test_temp=x_test
+
+x_train_temp= dummyEncode(x_train_temp)
+x_test_temp= dummyEncode(x_test_temp)
+
+#make sure same encoding for both train and test
+x_train_encoded1, x_test_encoded1=x_train_temp.align(x_test_temp,join='left',axis=1)
+
+
+
+#clean data of NaN, infinity
+x_train_encoded1=x_train_encoded1.replace((np.inf, -np.inf, np.nan), 0).reset_index(drop=True)
+x_test_encoded1=x_test_encoded1.replace((np.inf, -np.inf, np.nan), 0).reset_index(drop=True)
+   
+    
+    
+#run the random forest regressor
+regressor = RandomForestRegressor(n_estimators=20, random_state=0)
+regressor.fit(x_train_encoded1, y_train)
+y_pred = regressor.predict(x_test_encoded1)
+
+
+print('mean_absolute_error: '+ str(mean_absolute_error(y_test, y_pred)))
+#697.5570077946031
+
+#plot to visualize how close our predictions are from actual
+#(as data points get closer to the blue line indicates good predictions ) 
+
+plt.figure(figsize=(10,10))
+plt.scatter(y_test, y_pred, c='crimson')
+plt.yscale('log')
+plt.xscale('log')
+
+p1 = max(max(y_pred), max(y_test))
+p2 = min(min(y_pred), min(y_test))
+plt.plot([p1, p2], [p1, p2], 'b-')
+plt.xlabel('Test Values', fontsize=15)
+plt.ylabel('Predictions', fontsize=15)
+plt.axis('equal')
+plt.show()
+
+
+#the end
+###developed by Abdullah Almazidi for Rihal data science hiring challenge 7 Jan 2022###
+mean_absolute_error: 697.5570077946031
